@@ -12,14 +12,22 @@
     <body>
         <div id="div-chessboard">
             <div id="tabuleiro"></div>
+            <div id="block"></div>
         </div>
         <div class="interface">
-            <label for="trocaCor">Cor a ser jogada:</label>
-            <button type="button" id="trocaCor">Brancas</button>
+            <h1 class="titulo">StockFish API</h1>
+            <div class="flex">
+                <label for="trocaCor">Cor a ser jogada:</label>
+                <button type="button" id="trocaCor">Brancas</button>
+                <button type="button" id="restart">Reeiniciar</button>
+            </div>
             <div class="move-list-div">
                 <ol id="move-list"></ol>
             </div>
-            <button type="button" id="restart">Reeiniciar</button>
+            <div class="flex">
+                <button type="button" id="back"><</button>
+                <button type="button" id="foward">></button>
+            </div>
         </div>
     </body>
     <script src="AbChess-0.3.0/AbChess-0.3.0.js"></script>

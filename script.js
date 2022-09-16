@@ -1,6 +1,9 @@
-const options = {
-    width: Math.min(window.innerWidth * 0.66, window.innerHeight * 0.85)
-};
+var moveCount = 0;
+var playerColor = 'w';
+var abChess = undefined;
+
+const moveList = document.getElementById("move-list");
+const moveBlocker = document.getElementById("block");
 
 const sons = {
     move: new Audio("sounds/move.mp3"),
@@ -11,25 +14,7 @@ const sons = {
     checkmate: new Audio("sounds/checkmate.mp3"),
 }
 
-var moveCount = 0;
-var playerColor = 'w';
-
-
-var abChess = new AbChess("tabuleiro", options);
-abChess.setFEN();
-
-
-abChess.onMovePlayed(() => {
-    moveCount++;
-    playSound(moveCount);
-    addMoveToList(moveCount);
-
-    if(abChess.getActiveColor(moveCount) != playerColor){
-        makeMoveAPI();
-    }
-})
-
-function playSound(count){
+function playSound(count) {
     if (abChess.isCheckmate(count)) {
         sons.checkmate.play();
     }
@@ -39,42 +24,82 @@ function playSound(count){
     else if (isDraw(count)) {
         sons.stalemate.play();
     }
-    else if(wasCapture(count)){
+    else if (wasCapture(count)) {
         sons.capture.play();
     }
-    else{
+    else {
         sons.move.play();
     }
 }
 
-function isDraw(count){
+function blockTabuleiro(nextToMoveColor) {
+    if (nextToMoveColor === playerColor) {
+        moveBlocker.style.width = 0;
+        moveBlocker.style.height = 0;
+    }
+    else {
+        moveBlocker.style.width = "100%";
+        moveBlocker.style.height = "100%";
+    }
+}
+
+function isDraw(count) {
     return abChess.is50Moves(count) || abChess.isInsufficientMaterial(count) || abChess.isStalemate(count);
 }
 
-function wasCapture(count){
+function wasCapture(count) {
     return countPiecesPawns(abChess.getFEN(count - 1)) > countPiecesPawns(abChess.getFEN(count));
 }
 
-function countPiecesPawns(FENstring){
+function countPiecesPawns(FENstring) {
     let amt = 0;
-    for(let char of FENstring){
-        if(/[rnbqkp]/i.test(char)){
+    for (let char of FENstring) {
+        if (/[rnbqkp]/i.test(char)) {
             amt++;
         }
-        if(char === ' '){
+        if (char === ' ') {
             return amt;
         }
     }
     return amt;
 }
 
-function restart(){
-    abChess.reset();
-    abChess.setFEN();
-    moveCount = 0;
+function onMove() {
+    moveCount++;
+    playSound(moveCount);
+    addMoveToList(moveCount);
+    let nextPlayer = abChess.getActiveColor(moveCount);
+    blockTabuleiro(nextPlayer);
+
+    if (nextPlayer != playerColor) {
+        makeMoveAPI();
+    }
+
+    boardPos = moveCount;
 }
 
-function makeMoveAPI(){
+function novoTabuleiro() {
+    document.getElementById("tabuleiro").innerHTML = "";
+    var options = {
+        width: Math.min(window.innerWidth * 0.66, window.innerHeight * 0.85)
+    };
+    moveCount = 0;
+    moveList.innerHTML = "";
+
+    abChess = new AbChess("tabuleiro", options);
+    abChess.setFEN();
+
+
+    abChess.onMovePlayed(onMove);
+
+    if (playerColor === 'b') {
+        abChess.flip();
+        makeMoveAPI();
+    }
+    blockTabuleiro('w');
+}
+
+function makeMoveAPI() {
     let options = {
         method: 'POST',
         body: abChess.getFEN(moveCount)
@@ -82,7 +107,6 @@ function makeMoveAPI(){
     fetch('https://chess.apurn.com/nextmove', options)
         .then(response => response.text())
         .then(response => {
-            console.log("api move: ", response);
             let start = response.slice(0, 2);
             let end = response.slice(2, 5);
             let promotion = response.slice(5);
@@ -92,32 +116,52 @@ function makeMoveAPI(){
     var habba = "babba"
 }
 
-const moveList = document.getElementById("move-list");
-function addMoveToList(count){
+
+function addMoveToList(count) {
     let moveStr = abChess.getPGN().split(".").at(-1).slice(0, -3);
-    if(abChess.getActiveColor(count) == 'w'){
+    moveStr = moveStr.replace("\n", ' ');
+    moveStr = `${Math.floor((moveCount + 1) / 2)}. ${moveStr}`;
+    if (abChess.getActiveColor(count) == 'w') {
         moveList.lastChild.innerText = moveStr;
     }
-    else{
+    else {
         let newLi = document.createElement("li");
         newLi.innerText = moveStr;
         moveList.appendChild(newLi);
     }
-
+    moveList.scrollTop = moveList.scrollHeight;
 }
 
-const colorButton = document.getElementById("trocaCor"); 
+const colorButton = document.getElementById("trocaCor");
 colorButton.addEventListener("click", () => {
     colorButton.innerText = colorButton.innerText === "Brancas" ? "Pretas" : "Brancas";
-    playerColor = playerColor === 'w' ? 'b' : 'w';
-    abChess.flip();
+    playerColor = playerColor === 'w' ? 'b' : 'w'
+    novoTabuleiro();
+});
 
-    restart();
+const restartButton = document.getElementById("restart");
+restartButton.addEventListener("click", novoTabuleiro);
 
-    if(playerColor === 'b'){
-        makeMoveAPI();
+var boardPos = 0;
+const backButton = document.getElementById("back");
+backButton.addEventListener("click", () => {
+    blockTabuleiro();
+    if(boardPos > 0)
+        boardPos--;
+
+    abChess.setFEN(abChess.getFEN(boardPos));
+});
+const fowardButton = document.getElementById("foward");
+fowardButton.addEventListener("click", () => {
+    blockTabuleiro();
+    if(boardPos < moveCount)
+        boardPos++;
+
+    abChess.setFEN(abChess.getFEN(boardPos));
+
+    if(boardPos == moveCount){
+        blockTabuleiro(playerColor);
     }
 });
 
-const restartButton = document.getElementById("restart"); 
-restartButton.addEventListener("click", restart);
+novoTabuleiro();
