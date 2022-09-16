@@ -5,7 +5,7 @@ var abChess = undefined;
 const moveList = document.getElementById("move-list");
 const moveBlocker = document.getElementById("block");
 
-const sons = {
+const sonsNormais = {
     move: new Audio("sounds/move.mp3"),
     capture: new Audio("sounds/capture.mp3"),
     check: new Audio("sounds/check.mp3"),
@@ -13,6 +13,17 @@ const sons = {
     stalemate: new Audio("sounds/stalemate.mp3"),
     checkmate: new Audio("sounds/checkmate.mp3"),
 }
+
+const sonsMeme = {
+    move: new Audio("sounds/memes/move.mp3"),
+    capture: new Audio("sounds/memes/capture.mp3"),
+    check: new Audio("sounds/memes/check.mp3"),
+    castle: new Audio("sounds/memes/castle.mp3"),
+    stalemate: new Audio("sounds/memes/stalemate.mp3"),
+    checkmate: new Audio("sounds/memes/checkmate.mp3"),
+}
+
+let sons = sonsNormais;
 
 function playSound(count) {
     if (abChess.isCheckmate(count)) {
@@ -76,6 +87,7 @@ function onMove() {
     }
 
     boardPos = moveCount;
+    colorPosLista(boardPos - 1);
 }
 
 function novoTabuleiro() {
@@ -84,6 +96,7 @@ function novoTabuleiro() {
         width: Math.min(window.innerWidth * 0.66, window.innerHeight * 0.85)
     };
     moveCount = 0;
+    boardPos = 0;
     moveList.innerHTML = "";
 
     abChess = new AbChess("tabuleiro", options);
@@ -108,9 +121,11 @@ function makeMoveAPI() {
         .then(response => response.text())
         .then(response => {
             let start = response.slice(0, 2);
-            let end = response.slice(2, 5);
-            let promotion = response.slice(5);
-            abChess.play(start, end, promotion);
+            let end = response.slice(2, 4);
+            let promotion = response.slice(4);
+            console.log(response);
+            console.log(`StockFish move: ${start}, ${end}, ${promotion}`)
+            setTimeout(() => { abChess.play(start, end, promotion); }, 1000)
         })
         .catch(err => console.error(err));
     var habba = "babba"
@@ -132,6 +147,16 @@ function addMoveToList(count) {
     moveList.scrollTop = moveList.scrollHeight;
 }
 
+function colorPosLista(move) {
+    let index = Math.floor(move / 2);
+    for (let i = 0; i < moveList.children.length; i++) {
+        if (i == index)
+            moveList.children[i].id = "selectedMove";
+        else
+            moveList.children[i].id = "";
+    }
+}
+
 const colorButton = document.getElementById("trocaCor");
 colorButton.addEventListener("click", () => {
     colorButton.innerText = colorButton.innerText === "Brancas" ? "Pretas" : "Brancas";
@@ -144,23 +169,39 @@ restartButton.addEventListener("click", novoTabuleiro);
 
 var boardPos = 0;
 const backButton = document.getElementById("back");
-backButton.addEventListener("click", () => {
+backButton.addEventListener("click", moveBack);
+
+function moveBack() {
     blockTabuleiro();
-    if(boardPos > 0)
+    if (boardPos > 0)
         boardPos--;
 
     abChess.setFEN(abChess.getFEN(boardPos));
-});
+    colorPosLista(boardPos - 1);
+}
+
 const fowardButton = document.getElementById("foward");
-fowardButton.addEventListener("click", () => {
+fowardButton.addEventListener("click", moveFoward);
+
+function moveFoward() {
     blockTabuleiro();
-    if(boardPos < moveCount)
+    if (boardPos < moveCount)
         boardPos++;
 
     abChess.setFEN(abChess.getFEN(boardPos));
 
-    if(boardPos == moveCount){
+    if (boardPos == moveCount) {
         blockTabuleiro(playerColor);
+    }
+    colorPosLista(boardPos - 1);
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key == "ArrowRight") {
+        moveFoward();
+    }
+    else if (event.key == "ArrowLeft") {
+        moveBack();
     }
 });
 
