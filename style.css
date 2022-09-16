@@ -10,6 +10,10 @@ body {
     font-size: larger;
 }
 
+h3{
+    margin:0;
+}
+
 button{
     font-family: inherit;
     background-color: rgba(0, 0, 0, 0);
@@ -30,6 +34,7 @@ button:hover{
 
 .titulo{
     font-size: 4rem;
+    margin-bottom: 10px;
 }
 
 #div-chessboard {
